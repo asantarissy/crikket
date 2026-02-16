@@ -114,15 +114,6 @@ export function BugReportsList() {
                 : "Start reporting bugs to see them here."}
             </p>
           </div>
-          {filtersState.hasActiveFilters ? (
-            <Button
-              onClick={filtersState.resetFiltersAndSearch}
-              size="sm"
-              variant="outline"
-            >
-              Reset view
-            </Button>
-          ) : null}
         </div>
       ) : null}
 

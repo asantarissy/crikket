@@ -1,5 +1,4 @@
 import { changePlan } from "@crikket/billing/procedures/change-plan"
-import { createCheckoutSession } from "@crikket/billing/procedures/create-checkout-session"
 import { getCurrentOrganizationPlan } from "@crikket/billing/procedures/get-current-organization-plan"
 import { getEntitlements } from "@crikket/billing/procedures/get-entitlements"
 import { getPlanLimits } from "@crikket/billing/procedures/get-plan-limits"
@@ -8,7 +7,6 @@ import { recomputeEntitlements } from "@crikket/billing/procedures/recompute-ent
 
 export const billingRouter = {
   changePlan,
-  createCheckoutSession,
   getCurrentOrganizationPlan,
   getEntitlements,
   getPlanLimits,

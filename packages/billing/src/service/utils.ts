@@ -7,6 +7,15 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 export function toDateOrUndefined(value: unknown): Date | undefined {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed
+  }
+
   if (typeof value !== "string" || value.length === 0) {
     return undefined
   }
@@ -17,6 +26,21 @@ export function toDateOrUndefined(value: unknown): Date | undefined {
 
 export function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback
+}
+
+export function isPolarResourceNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false
+  }
+
+  const errorCode =
+    "error" in error && typeof error.error === "string" ? error.error : ""
+  if (errorCode === "ResourceNotFound") {
+    return true
+  }
+
+  const message = getErrorMessage(error, "")
+  return message.includes("ResourceNotFound")
 }
 
 export function findFirstStringByKeys(

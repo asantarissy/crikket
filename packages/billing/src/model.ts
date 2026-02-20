@@ -1,3 +1,8 @@
+import {
+  billingPlanMonthlyBasePriceUsd,
+  billingPlanYearlyBasePriceUsd,
+} from "@crikket/shared/constants/billing"
+
 export const BILLING_PLAN = {
   free: "free",
   pro: "pro",
@@ -172,15 +177,11 @@ export function deserializeEntitlements(
 }
 
 export const billingPlanMonthlyPriceUsd: Record<BillingPlan, number> = {
-  free: 0,
-  pro: 25,
-  studio: 49,
+  ...billingPlanMonthlyBasePriceUsd,
 }
 
 export const billingPlanYearlyPriceUsd: Record<BillingPlan, number> = {
-  free: 0,
-  pro: 250,
-  studio: 490,
+  ...billingPlanYearlyBasePriceUsd,
 }
 
 function createPlanLimitSnapshot(

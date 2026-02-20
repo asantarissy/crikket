@@ -9,7 +9,7 @@ export function SuccessActions() {
     <div className="flex flex-col gap-2 sm:flex-row">
       <Link
         className={cn(buttonVariants({ size: "lg" }), "sm:flex-1")}
-        href="/settings/organization"
+        href="/settings/billing"
       >
         View Billing Settings
       </Link>

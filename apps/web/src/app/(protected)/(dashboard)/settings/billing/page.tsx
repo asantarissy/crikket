@@ -7,6 +7,7 @@ import { getProtectedAuthData } from "@/app/(protected)/_lib/get-protected-auth-
 import { client } from "@/utils/orpc"
 
 import { OrganizationBillingCard } from "../_components/organization-billing-card"
+import { getRequestErrorMessage } from "../_lib/get-request-error-message"
 
 export const metadata: Metadata = {
   title: "Billing Settings",
@@ -19,32 +20,6 @@ type BillingSnapshot = Awaited<
 type BillingPlanLimitsSnapshot = Awaited<
   ReturnType<typeof client.billing.getPlanLimits>
 >
-
-function getAuthErrorMessage(error: unknown): string {
-  if (!error || typeof error !== "object") {
-    return "Unknown error"
-  }
-
-  const message =
-    "message" in error && typeof error.message === "string"
-      ? error.message
-      : null
-  if (message && message.length > 0) {
-    return message
-  }
-
-  const statusText =
-    "statusText" in error && typeof error.statusText === "string"
-      ? error.statusText
-      : null
-  if (statusText && statusText.length > 0) {
-    return statusText
-  }
-
-  const code =
-    "code" in error && typeof error.code === "string" ? error.code : null
-  return code ?? "Unknown error"
-}
 
 export default async function BillingSettingsPage() {
   const { organizations, session } = await getProtectedAuthData()
@@ -121,26 +96,28 @@ export default async function BillingSettingsPage() {
       </div>
 
       <OrganizationBillingCard
+        billing={{
+          currentPeriodEnd: billingState.data?.currentPeriodEnd ?? null,
+          currentPeriodStart: billingState.data?.currentPeriodStart ?? null,
+          limits: planLimitsState.data,
+          memberCap: billingState.data?.entitlements.memberCap ?? null,
+          memberCount: billingState.data?.memberCount ?? 0,
+          plan: billingState.data?.plan ?? "free",
+          subscriptionStatus: billingState.data?.subscriptionStatus ?? "none",
+        }}
         canManageBilling={(memberRoleData?.role ?? "member") === "owner"}
-        currentPeriodEnd={billingState.data?.currentPeriodEnd ?? null}
-        currentPeriodStart={billingState.data?.currentPeriodStart ?? null}
-        limits={planLimitsState.data}
-        memberCap={billingState.data?.entitlements.memberCap ?? null}
-        memberCount={billingState.data?.memberCount ?? 0}
         organizationId={activeOrganization.id}
-        plan={billingState.data?.plan ?? "free"}
-        subscriptionStatus={billingState.data?.subscriptionStatus ?? "none"}
       />
 
       {billingState.error ? (
         <p className="text-destructive text-sm">
-          Failed to load billing: {getAuthErrorMessage(billingState.error)}
+          Failed to load billing: {getRequestErrorMessage(billingState.error)}
         </p>
       ) : null}
       {planLimitsState.error ? (
         <p className="text-destructive text-sm">
           Failed to load plan limits:{" "}
-          {getAuthErrorMessage(planLimitsState.error)}
+          {getRequestErrorMessage(planLimitsState.error)}
         </p>
       ) : null}
     </div>

@@ -16,6 +16,7 @@ import { client } from "@/utils/orpc"
 import { OrganizationMembersSection } from "../_components/org-members/organization-members-section"
 import { OrganizationDangerZone } from "../_components/organization-danger-zone"
 import { OrganizationSettingsForm } from "../_components/organization-settings-form"
+import { getRequestErrorMessage } from "../_lib/get-request-error-message"
 import { parseMembersQuery } from "../_lib/members-query"
 
 export const metadata: Metadata = {
@@ -40,35 +41,8 @@ type OrganizationMember = NonNullable<
 type BillingSnapshot = Awaited<
   ReturnType<typeof client.billing.getCurrentOrganizationPlan>
 >
-
 function toIsoString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value
-}
-
-function getAuthErrorMessage(error: unknown): string {
-  if (!error || typeof error !== "object") {
-    return "Unknown error"
-  }
-
-  const message =
-    "message" in error && typeof error.message === "string"
-      ? error.message
-      : null
-  if (message && message.length > 0) {
-    return message
-  }
-
-  const statusText =
-    "statusText" in error && typeof error.statusText === "string"
-      ? error.statusText
-      : null
-  if (statusText && statusText.length > 0) {
-    return statusText
-  }
-
-  const code =
-    "code" in error && typeof error.code === "string" ? error.code : null
-  return code ?? "Unknown error"
 }
 
 export default async function OrganizationSettingsPage({
@@ -262,7 +236,7 @@ export default async function OrganizationSettingsPage({
 
       {membersError ? (
         <p className="text-destructive text-sm">
-          Failed to load members: {getAuthErrorMessage(membersError)}
+          Failed to load members: {getRequestErrorMessage(membersError)}
         </p>
       ) : null}
       {invitationError ? (
@@ -272,7 +246,7 @@ export default async function OrganizationSettingsPage({
       ) : null}
       {billingState.error ? (
         <p className="text-destructive text-sm">
-          Failed to load billing: {getAuthErrorMessage(billingState.error)}
+          Failed to load billing: {getRequestErrorMessage(billingState.error)}
         </p>
       ) : null}
     </div>

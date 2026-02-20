@@ -1,26 +1,16 @@
-import { ORPCError } from "@orpc/server"
 import { z } from "zod"
 
 import { changeOrganizationPlan } from "../service/checkout"
 import { protectedProcedure } from "./context"
+import {
+  optionalOrganizationIdInputSchema,
+  resolveOrganizationId,
+} from "./organization-id"
 
-const changePlanInputSchema = z.object({
-  organizationId: z.string().min(1).optional(),
+const changePlanInputSchema = optionalOrganizationIdInputSchema.extend({
   billingInterval: z.enum(["monthly", "yearly"]).default("monthly"),
   plan: z.enum(["pro", "studio"]),
 })
-
-function resolveOrganizationId(input: {
-  organizationId?: string
-  activeOrganizationId?: string | null
-}): string {
-  const organizationId = input.organizationId ?? input.activeOrganizationId
-  if (!organizationId) {
-    throw new ORPCError("BAD_REQUEST", { message: "No active organization" })
-  }
-
-  return organizationId
-}
 
 export const changePlan = protectedProcedure
   .input(changePlanInputSchema)

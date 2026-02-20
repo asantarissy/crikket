@@ -3,9 +3,15 @@ import {
   billingWebhookEvent,
   organizationBillingAccount,
 } from "@crikket/db/schema/billing"
+import { reportNonFatalError } from "@crikket/shared/lib/errors"
 import { eq, sql } from "drizzle-orm"
 
 import { polarClient } from "../lib/payments"
+import {
+  type BillingPlan,
+  type BillingSubscriptionStatus,
+  normalizeBillingSubscriptionStatus,
+} from "../model"
 import { upsertOrganizationBillingProjection } from "./entitlements"
 import {
   extractCancelAtPeriodEnd,
@@ -26,65 +32,187 @@ import type {
   PolarWebhookProcessingResult,
   WebhookBillingBackfill,
 } from "./types"
-import { asRecord, findFirstStringByKeys, getErrorMessage } from "./utils"
+import {
+  asRecord,
+  findFirstStringByKeys,
+  getErrorMessage,
+  isPolarResourceNotFoundError,
+} from "./utils"
 
-async function resolveOrganizationIdFromWebhookPayload(
+type ExtractedWebhookBillingProjection = {
+  plan?: BillingPlan
+  subscriptionStatus?: BillingSubscriptionStatus
+  polarCustomerId?: string
+  polarSubscriptionId?: string
+  currentPeriodStart?: Date
+  currentPeriodEnd?: Date
+  cancelAtPeriodEnd?: boolean
+}
+
+function extractWebhookBillingProjection(
   payload: PolarWebhookPayload
-): Promise<string | undefined> {
-  const referenceId = extractReferenceId(payload)
-  if (referenceId) {
-    return referenceId
+): ExtractedWebhookBillingProjection {
+  return {
+    plan: resolvePlanFromProductId(extractProductId(payload)),
+    subscriptionStatus: extractSubscriptionStatus(payload),
+    polarCustomerId: extractCustomerId(payload),
+    polarSubscriptionId: extractSubscriptionId(payload),
+    currentPeriodStart: extractCurrentPeriodStart(payload),
+    currentPeriodEnd: extractCurrentPeriodEnd(payload),
+    cancelAtPeriodEnd: extractCancelAtPeriodEnd(payload),
+  }
+}
+
+async function hydrateBillingProjectionFromSubscription(input: {
+  projection: ExtractedWebhookBillingProjection
+}): Promise<ExtractedWebhookBillingProjection> {
+  const subscriptionId = input.projection.polarSubscriptionId
+  if (!subscriptionId) {
+    return input.projection
   }
 
+  const hasCoreSubscriptionFields = Boolean(
+    input.projection.plan &&
+      input.projection.subscriptionStatus &&
+      input.projection.currentPeriodStart &&
+      input.projection.currentPeriodEnd
+  )
+  const requiresHydration =
+    !hasCoreSubscriptionFields ||
+    input.projection.cancelAtPeriodEnd === undefined ||
+    !input.projection.polarCustomerId
+
+  if (!requiresHydration) {
+    return input.projection
+  }
+
+  try {
+    const subscription = await polarClient.subscriptions.get({
+      id: subscriptionId,
+    })
+
+    return {
+      plan:
+        input.projection.plan ??
+        resolvePlanFromProductId(subscription.productId),
+      subscriptionStatus:
+        input.projection.subscriptionStatus ??
+        normalizeBillingSubscriptionStatus(subscription.status),
+      polarCustomerId:
+        input.projection.polarCustomerId ??
+        subscription.customerId ??
+        undefined,
+      polarSubscriptionId:
+        subscription.id ?? input.projection.polarSubscriptionId,
+      currentPeriodStart:
+        input.projection.currentPeriodStart ??
+        subscription.currentPeriodStart ??
+        undefined,
+      currentPeriodEnd:
+        input.projection.currentPeriodEnd ??
+        subscription.currentPeriodEnd ??
+        undefined,
+      cancelAtPeriodEnd:
+        input.projection.cancelAtPeriodEnd ??
+        subscription.cancelAtPeriodEnd ??
+        undefined,
+    }
+  } catch (error) {
+    reportNonFatalError(
+      "Failed to hydrate billing projection from subscription",
+      error
+    )
+    return input.projection
+  }
+}
+
+type OrganizationLookupResult = {
+  organizationId?: string
+  lookupError?: Error
+}
+
+async function resolveOrganizationIdFromSubscriptionPayload(
+  payload: PolarWebhookPayload
+): Promise<OrganizationLookupResult> {
   const subscriptionId = extractSubscriptionId(payload)
-  if (subscriptionId) {
-    const billingAccountBySubscription =
-      await db.query.organizationBillingAccount.findFirst({
-        where: eq(
-          organizationBillingAccount.polarSubscriptionId,
-          subscriptionId
-        ),
-        columns: {
-          organizationId: true,
-        },
-      })
-    if (billingAccountBySubscription?.organizationId) {
-      return billingAccountBySubscription.organizationId
+  if (!subscriptionId) {
+    return {}
+  }
+
+  const billingAccountBySubscription =
+    await db.query.organizationBillingAccount.findFirst({
+      where: eq(organizationBillingAccount.polarSubscriptionId, subscriptionId),
+      columns: {
+        organizationId: true,
+      },
+    })
+  if (billingAccountBySubscription?.organizationId) {
+    return { organizationId: billingAccountBySubscription.organizationId }
+  }
+
+  try {
+    const subscription = await polarClient.subscriptions.get({
+      id: subscriptionId,
+    })
+    const subscriptionReferenceId =
+      extractReferenceIdFromMetadata(subscription.metadata) ??
+      findFirstStringByKeys(subscription, ["referenceId", "reference_id"])
+    if (subscriptionReferenceId) {
+      return { organizationId: subscriptionReferenceId }
+    }
+  } catch (error) {
+    if (isPolarResourceNotFoundError(error)) {
+      return {}
+    }
+
+    return {
+      lookupError: new Error(
+        `Failed to resolve subscription ${subscriptionId}: ${getErrorMessage(
+          error,
+          "Unknown subscription lookup error"
+        )}`
+      ),
     }
   }
 
+  return {}
+}
+
+async function resolveOrganizationIdFromCheckoutPayload(
+  payload: PolarWebhookPayload
+): Promise<OrganizationLookupResult> {
   const checkoutId = extractCheckoutId(payload)
-  let checkoutLookupError: Error | null = null
-  if (checkoutId) {
-    try {
-      const checkout = await polarClient.checkouts.get({
-        id: checkoutId,
-      })
-      const checkoutReferenceId =
-        extractReferenceIdFromMetadata(checkout.metadata) ??
-        findFirstStringByKeys(checkout, ["referenceId", "reference_id"])
-      if (checkoutReferenceId) {
-        return checkoutReferenceId
-      }
-    } catch (error) {
-      checkoutLookupError = new Error(
+  if (!checkoutId) {
+    return {}
+  }
+
+  try {
+    const checkout = await polarClient.checkouts.get({
+      id: checkoutId,
+    })
+    const checkoutReferenceId =
+      extractReferenceIdFromMetadata(checkout.metadata) ??
+      findFirstStringByKeys(checkout, ["referenceId", "reference_id"])
+    if (checkoutReferenceId) {
+      return { organizationId: checkoutReferenceId }
+    }
+  } catch (error) {
+    return {
+      lookupError: new Error(
         `Failed to resolve checkout ${checkoutId}: ${getErrorMessage(
           error,
           "Unknown checkout lookup error"
         )}`
-      )
+      ),
     }
   }
 
-  const customerId = extractCustomerId(payload)
-  if (!customerId) {
-    if (checkoutLookupError) {
-      throw checkoutLookupError
-    }
+  return {}
+}
 
-    return undefined
-  }
-
+async function resolveOrganizationIdFromCustomerId(
+  customerId: string
+): Promise<string | undefined> {
   const billingAccountsByCustomer = await db
     .select({
       organizationId: organizationBillingAccount.organizationId,
@@ -97,8 +225,53 @@ async function resolveOrganizationIdFromWebhookPayload(
     return billingAccountsByCustomer[0]?.organizationId
   }
 
-  if (checkoutLookupError) {
-    throw checkoutLookupError
+  return undefined
+}
+
+async function resolveOrganizationIdFromWebhookPayload(
+  payload: PolarWebhookPayload
+): Promise<string | undefined> {
+  const referenceId = extractReferenceId(payload)
+  if (referenceId) {
+    return referenceId
+  }
+
+  const subscriptionLookup =
+    await resolveOrganizationIdFromSubscriptionPayload(payload)
+  if (subscriptionLookup.organizationId) {
+    return subscriptionLookup.organizationId
+  }
+
+  const checkoutLookup = await resolveOrganizationIdFromCheckoutPayload(payload)
+  if (checkoutLookup.organizationId) {
+    return checkoutLookup.organizationId
+  }
+
+  const customerId = extractCustomerId(payload)
+  if (!customerId) {
+    if (subscriptionLookup.lookupError) {
+      throw subscriptionLookup.lookupError
+    }
+
+    if (checkoutLookup.lookupError) {
+      throw checkoutLookup.lookupError
+    }
+
+    return undefined
+  }
+
+  const customerLookupOrganizationId =
+    await resolveOrganizationIdFromCustomerId(customerId)
+  if (customerLookupOrganizationId) {
+    return customerLookupOrganizationId
+  }
+
+  if (subscriptionLookup.lookupError) {
+    throw subscriptionLookup.lookupError
+  }
+
+  if (checkoutLookup.lookupError) {
+    throw checkoutLookup.lookupError
   }
 
   return undefined
@@ -126,39 +299,28 @@ export async function findWebhookBillingBackfill(
       continue
     }
 
-    const eventType =
-      typeof payload.type === "string" ? payload.type : "unknown"
-    const isSubscriptionEvent = eventType.startsWith("subscription.")
-    const plan = resolvePlanFromProductId(extractProductId(payload))
-    const subscriptionStatus = isSubscriptionEvent
-      ? extractSubscriptionStatus(payload)
-      : undefined
-    const polarCustomerId = extractCustomerId(payload)
-    const polarSubscriptionId = extractSubscriptionId(payload)
-    const currentPeriodStart = isSubscriptionEvent
-      ? extractCurrentPeriodStart(payload)
-      : undefined
-    const currentPeriodEnd = isSubscriptionEvent
-      ? extractCurrentPeriodEnd(payload)
-      : undefined
-    const cancelAtPeriodEnd = isSubscriptionEvent
-      ? extractCancelAtPeriodEnd(payload)
-      : undefined
+    const projection = extractWebhookBillingProjection(payload)
+    const hasProjectionData =
+      projection.plan !== undefined ||
+      projection.subscriptionStatus !== undefined ||
+      projection.polarCustomerId !== undefined ||
+      projection.polarSubscriptionId !== undefined ||
+      projection.currentPeriodStart !== undefined ||
+      projection.currentPeriodEnd !== undefined ||
+      projection.cancelAtPeriodEnd !== undefined
 
-    if (
-      !(plan || subscriptionStatus || polarCustomerId || polarSubscriptionId)
-    ) {
+    if (!hasProjectionData) {
       continue
     }
 
     return {
-      plan,
-      subscriptionStatus,
-      polarCustomerId,
-      polarSubscriptionId,
-      currentPeriodStart,
-      currentPeriodEnd,
-      cancelAtPeriodEnd,
+      plan: projection.plan,
+      subscriptionStatus: projection.subscriptionStatus,
+      polarCustomerId: projection.polarCustomerId,
+      polarSubscriptionId: projection.polarSubscriptionId,
+      currentPeriodStart: projection.currentPeriodStart,
+      currentPeriodEnd: projection.currentPeriodEnd,
+      cancelAtPeriodEnd: projection.cancelAtPeriodEnd,
     }
   }
 
@@ -230,33 +392,20 @@ export async function processPolarWebhookPayload(
       }
     }
 
-    const productId = extractProductId(payload)
-    const plan = resolvePlanFromProductId(productId)
-    const isSubscriptionEvent = eventType.startsWith("subscription.")
-    const subscriptionStatus = isSubscriptionEvent
-      ? extractSubscriptionStatus(payload)
-      : undefined
-    const polarCustomerId = extractCustomerId(payload)
-    const polarSubscriptionId = extractSubscriptionId(payload)
-    const currentPeriodStart = isSubscriptionEvent
-      ? extractCurrentPeriodStart(payload)
-      : undefined
-    const currentPeriodEnd = isSubscriptionEvent
-      ? extractCurrentPeriodEnd(payload)
-      : undefined
-    const cancelAtPeriodEnd = isSubscriptionEvent
-      ? extractCancelAtPeriodEnd(payload)
-      : undefined
+    const extractedProjection = extractWebhookBillingProjection(payload)
+    const projection = await hydrateBillingProjectionFromSubscription({
+      projection: extractedProjection,
+    })
 
     await upsertOrganizationBillingProjection({
       organizationId,
-      plan,
-      subscriptionStatus,
-      polarCustomerId,
-      polarSubscriptionId,
-      currentPeriodStart,
-      currentPeriodEnd,
-      cancelAtPeriodEnd,
+      plan: projection.plan,
+      subscriptionStatus: projection.subscriptionStatus,
+      polarCustomerId: projection.polarCustomerId,
+      polarSubscriptionId: projection.polarSubscriptionId,
+      currentPeriodStart: projection.currentPeriodStart,
+      currentPeriodEnd: projection.currentPeriodEnd,
+      cancelAtPeriodEnd: projection.cancelAtPeriodEnd,
       source: "webhook",
     })
 

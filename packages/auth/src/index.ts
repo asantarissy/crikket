@@ -42,15 +42,30 @@ const socialProviders =
       }
     : undefined
 
+type CheckoutProductSlug = "pro" | "pro-yearly" | "studio" | "studio-yearly"
+
 const checkoutProducts = [
   env.POLAR_PRO_PRODUCT_ID
     ? ({ productId: env.POLAR_PRO_PRODUCT_ID, slug: "pro" } as const)
     : null,
+  env.POLAR_PRO_YEARLY_PRODUCT_ID
+    ? ({
+        productId: env.POLAR_PRO_YEARLY_PRODUCT_ID,
+        slug: "pro-yearly",
+      } as const)
+    : null,
   env.POLAR_STUDIO_PRODUCT_ID
     ? ({ productId: env.POLAR_STUDIO_PRODUCT_ID, slug: "studio" } as const)
     : null,
-].filter((product): product is { productId: string; slug: "pro" | "studio" } =>
-  Boolean(product)
+  env.POLAR_STUDIO_YEARLY_PRODUCT_ID
+    ? ({
+        productId: env.POLAR_STUDIO_YEARLY_PRODUCT_ID,
+        slug: "studio-yearly",
+      } as const)
+    : null,
+].filter(
+  (product): product is { productId: string; slug: CheckoutProductSlug } =>
+    Boolean(product)
 )
 
 const polarCheckout = checkout({

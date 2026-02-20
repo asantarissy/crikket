@@ -3,14 +3,11 @@ import { useRouter } from "nextjs-toploader/app"
 import * as React from "react"
 import { toast } from "sonner"
 
+import { setCheckoutPendingGuard } from "@/lib/billing-checkout-guard"
 import { client } from "@/utils/orpc"
 
 import type { BillingInterval, SwitchablePlan } from "./types"
-import {
-  extractRedirectUrl,
-  getErrorMessage,
-  setCheckoutPendingGuard,
-} from "./utils"
+import { extractRedirectUrl, getErrorMessage } from "./utils"
 
 interface UseBillingActionsInput {
   organizationId: string

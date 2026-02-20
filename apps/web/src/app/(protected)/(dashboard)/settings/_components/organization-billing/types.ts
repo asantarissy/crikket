@@ -14,15 +14,17 @@ export type BillingPlanLimits = Record<
 >
 
 export interface OrganizationBillingCardProps {
-  organizationId: string
+  billing: {
+    currentPeriodEnd: string | Date | null
+    currentPeriodStart: string | Date | null
+    limits: BillingPlanLimits | null
+    memberCap: number | null
+    memberCount: number
+    plan: BillingPlan
+    subscriptionStatus: string
+  }
   canManageBilling: boolean
-  limits: BillingPlanLimits | null
-  memberCap: number | null
-  memberCount: number
-  plan: BillingPlan
-  subscriptionStatus: string
-  currentPeriodStart: string | Date | null
-  currentPeriodEnd: string | Date | null
+  organizationId: string
 }
 
 export interface PlanOption {
@@ -32,4 +34,27 @@ export interface PlanOption {
     monthlyPriceUsd: number
     yearlyPriceUsd: number
   }
+}
+
+export interface BillingSummarySnapshot {
+  currentBillingInterval: BillingInterval | null
+  currentPeriodEnd: string | Date | null
+  memberCap: number | null
+  memberCount: number
+  plan: BillingPlan
+  proMemberCap: number
+  subscriptionStatus: string
+}
+
+export interface BillingSummaryPricing {
+  currentPlanMonthlyPrice: number
+  currentPlanYearlyPrice: number
+}
+
+export interface PlanOptionCardContext {
+  billingInterval: BillingInterval
+  canManageBilling: boolean
+  currentBillingInterval: BillingInterval | null
+  currentPlan: BillingPlan
+  isMutating: boolean
 }

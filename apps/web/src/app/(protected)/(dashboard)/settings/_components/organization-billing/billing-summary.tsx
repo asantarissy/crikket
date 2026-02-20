@@ -1,6 +1,11 @@
 import { Badge } from "@crikket/ui/components/ui/badge"
 
-import type { BillingPlan, BillingPlanLimits } from "./types"
+import type {
+  BillingPlan,
+  BillingPlanLimits,
+  BillingSummaryPricing,
+  BillingSummarySnapshot,
+} from "./types"
 import {
   formatDateLabel,
   formatMoney,
@@ -11,38 +16,43 @@ import {
 } from "./utils"
 
 interface BillingSummaryProps {
-  currentPeriodEnd: string | Date | null
   currentPlanLimit: BillingPlanLimits[BillingPlan] | null
-  currentPlanPrice: number
-  memberCap: number | null
-  memberCount: number
-  plan: BillingPlan
-  proMemberCap: number
-  subscriptionStatus: string
+  pricing: BillingSummaryPricing
+  snapshot: BillingSummarySnapshot
 }
 
 export function BillingSummary(props: BillingSummaryProps) {
+  const { currentPlanLimit, pricing, snapshot } = props
+  const priceInterval = snapshot.currentBillingInterval ?? "monthly"
+  const currentPlanPrice =
+    priceInterval === "yearly"
+      ? pricing.currentPlanYearlyPrice
+      : pricing.currentPlanMonthlyPrice
+  const currentPlanPriceLabel =
+    snapshot.currentBillingInterval === "yearly"
+      ? "Current yearly price"
+      : "Current monthly price"
   const memberLimitLabel =
-    props.memberCap === null
+    snapshot.memberCap === null
       ? "Unlimited"
-      : `${props.memberCap.toLocaleString()} members`
-  const renewalDate = formatDateLabel(props.currentPeriodEnd)
+      : `${snapshot.memberCap.toLocaleString()} members`
+  const renewalDate = formatDateLabel(snapshot.currentPeriodEnd)
   const exceedsProMemberCap =
-    props.plan === "studio" && props.memberCount > props.proMemberCap
+    snapshot.plan === "studio" && snapshot.memberCount > snapshot.proMemberCap
 
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={planBadgeVariant(props.plan)}>
-          {formatPlanLabel(props.plan)}
+        <Badge variant={planBadgeVariant(snapshot.plan)}>
+          {formatPlanLabel(snapshot.plan)}
         </Badge>
         <span className="text-muted-foreground text-sm">
-          {formatSubscriptionStatus(props.subscriptionStatus)}
+          {formatSubscriptionStatus(snapshot.subscriptionStatus)}
         </span>
       </div>
 
       <p className="mt-3 font-medium text-sm">
-        Current monthly price: {formatMoney(props.currentPlanPrice, "monthly")}
+        {currentPlanPriceLabel}: {formatMoney(currentPlanPrice, priceInterval)}
       </p>
       <p className="mt-1 text-muted-foreground text-sm">
         {renewalDate
@@ -52,14 +62,12 @@ export function BillingSummary(props: BillingSummaryProps) {
 
       <div className="mt-3 space-y-1 text-sm">
         <p>
-          Members: {props.memberCount.toLocaleString()} / {memberLimitLabel}
+          Members: {snapshot.memberCount.toLocaleString()} / {memberLimitLabel}
         </p>
         <p>
           Video limit:{" "}
-          {props.currentPlanLimit?.canUploadVideo
-            ? formatVideoDurationLabel(
-                props.currentPlanLimit.maxVideoDurationMs
-              )
+          {currentPlanLimit?.canUploadVideo
+            ? formatVideoDurationLabel(currentPlanLimit.maxVideoDurationMs)
             : "Locked"}
         </p>
       </div>
@@ -67,7 +75,7 @@ export function BillingSummary(props: BillingSummaryProps) {
       {exceedsProMemberCap ? (
         <p className="mt-2 text-muted-foreground text-sm">
           Downgrading to Pro keeps current members, but new invites are blocked
-          while you are above {props.proMemberCap} members.
+          while you are above {snapshot.proMemberCap} members.
         </p>
       ) : null}
     </div>

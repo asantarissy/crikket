@@ -20,7 +20,10 @@ import { BillingSummary } from "./organization-billing/billing-summary"
 import { PlanOptionCard } from "./organization-billing/plan-option-card"
 import type {
   BillingInterval,
+  BillingSummaryPricing,
+  BillingSummarySnapshot,
   OrganizationBillingCardProps,
+  PlanOptionCardContext,
 } from "./organization-billing/types"
 import { useBillingActions } from "./organization-billing/use-billing-actions"
 import {
@@ -33,22 +36,26 @@ import {
 } from "./organization-billing/utils"
 
 export function OrganizationBillingCard({
+  billing,
   organizationId,
   canManageBilling,
-  limits,
-  memberCap,
-  memberCount,
-  plan,
-  subscriptionStatus,
-  currentPeriodStart,
-  currentPeriodEnd,
 }: OrganizationBillingCardProps) {
+  const {
+    currentPeriodEnd,
+    currentPeriodStart,
+    limits,
+    memberCap,
+    memberCount,
+    plan,
+    subscriptionStatus,
+  } = billing
   const [billingInterval, setBillingInterval] =
     React.useState<BillingInterval>("monthly")
 
   const {
     currentPlanLimit,
-    currentPlanPrice,
+    currentPlanMonthlyPrice,
+    currentPlanYearlyPrice,
     proMemberCap,
     proPrice,
     proYearlyPrice,
@@ -87,6 +94,26 @@ export function OrganizationBillingCard({
   })
 
   const canOpenPortal = plan !== "free" && canManageBilling && isBillingEnabled
+  const planOptionContext: PlanOptionCardContext = {
+    billingInterval,
+    canManageBilling,
+    currentBillingInterval,
+    currentPlan: plan,
+    isMutating: actions.isMutating,
+  }
+  const billingSummarySnapshot: BillingSummarySnapshot = {
+    currentBillingInterval,
+    currentPeriodEnd,
+    memberCap,
+    memberCount,
+    plan,
+    proMemberCap,
+    subscriptionStatus,
+  }
+  const billingSummaryPricing: BillingSummaryPricing = {
+    currentPlanMonthlyPrice,
+    currentPlanYearlyPrice,
+  }
 
   return (
     <Card>
@@ -101,14 +128,9 @@ export function OrganizationBillingCard({
 
       <CardContent className="space-y-6">
         <BillingSummary
-          currentPeriodEnd={currentPeriodEnd}
           currentPlanLimit={currentPlanLimit}
-          currentPlanPrice={currentPlanPrice}
-          memberCap={memberCap}
-          memberCount={memberCount}
-          plan={plan}
-          proMemberCap={proMemberCap}
-          subscriptionStatus={subscriptionStatus}
+          pricing={billingSummaryPricing}
+          snapshot={billingSummarySnapshot}
         />
 
         {isBillingEnabled ? (
@@ -140,11 +162,7 @@ export function OrganizationBillingCard({
             <div className="grid gap-3 md:grid-cols-2">
               {planOptions.map((option) => (
                 <PlanOptionCard
-                  billingInterval={billingInterval}
-                  canManageBilling={canManageBilling}
-                  currentBillingInterval={currentBillingInterval}
-                  currentPlan={plan}
-                  isMutating={actions.isMutating}
+                  context={planOptionContext}
                   key={option.slug}
                   onSelect={actions.handlePlanSelection}
                   option={option}

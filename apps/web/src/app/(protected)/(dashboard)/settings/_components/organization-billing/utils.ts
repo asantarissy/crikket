@@ -1,3 +1,7 @@
+import {
+  billingPlanMonthlyBasePriceUsd,
+  billingPlanYearlyBasePriceUsd,
+} from "@crikket/shared/constants/billing"
 import type {
   BillingInterval,
   BillingPlan,
@@ -5,18 +9,6 @@ import type {
   PlanOption,
   SwitchablePlan,
 } from "./types"
-
-export const DEFAULT_PLAN_PRICE = {
-  pro: 25,
-  studio: 49,
-} as const
-
-export const DEFAULT_YEARLY_PLAN_PRICE = {
-  pro: 250,
-  studio: 490,
-} as const
-
-const CHECKOUT_PENDING_SESSION_KEY = "crikket:billing:checkout-pending"
 
 export function formatPlanLabel(plan: BillingPlan): string {
   if (plan === "pro") return "Pro"
@@ -139,35 +131,6 @@ export function inferCurrentBillingInterval(input: {
   return days >= 330 ? "yearly" : "monthly"
 }
 
-export function setCheckoutPendingGuard(): boolean {
-  try {
-    window.sessionStorage.setItem(
-      CHECKOUT_PENDING_SESSION_KEY,
-      JSON.stringify({
-        createdAt: Date.now(),
-      })
-    )
-    return true
-  } catch {
-    return false
-  }
-}
-
-export function getPlanSwitchActionLabel(input: {
-  currentPlan: BillingPlan
-  nextPlan: SwitchablePlan
-}): string {
-  if (input.currentPlan === "free") {
-    return `Choose ${formatPlanLabel(input.nextPlan)}`
-  }
-
-  if (input.currentPlan === "pro" && input.nextPlan === "studio") {
-    return "Upgrade to Studio"
-  }
-
-  return "Select Plan"
-}
-
 export function getPlanOptions(prices: {
   proPrice: number
   proYearlyPrice: number
@@ -233,28 +196,37 @@ export function getPlanPrice(input: {
   proYearlyPrice: number
   studioPrice: number
   studioYearlyPrice: number
-  currentPlanPrice: number
+  currentPlanMonthlyPrice: number
+  currentPlanYearlyPrice: number
   proMemberCap: number
   currentPlanLimit: BillingPlanLimits[BillingPlan] | null
 } {
-  const proPrice = input.limits?.pro.monthlyPriceUsd ?? DEFAULT_PLAN_PRICE.pro
+  const proPrice =
+    input.limits?.pro.monthlyPriceUsd ?? billingPlanMonthlyBasePriceUsd.pro
   const proYearlyPrice =
-    input.limits?.pro.yearlyPriceUsd ?? DEFAULT_YEARLY_PLAN_PRICE.pro
+    input.limits?.pro.yearlyPriceUsd ?? billingPlanYearlyBasePriceUsd.pro
   const studioPrice =
-    input.limits?.studio.monthlyPriceUsd ?? DEFAULT_PLAN_PRICE.studio
+    input.limits?.studio.monthlyPriceUsd ??
+    billingPlanMonthlyBasePriceUsd.studio
   const studioYearlyPrice =
-    input.limits?.studio.yearlyPriceUsd ?? DEFAULT_YEARLY_PLAN_PRICE.studio
+    input.limits?.studio.yearlyPriceUsd ?? billingPlanYearlyBasePriceUsd.studio
 
   return {
     proPrice,
     proYearlyPrice,
     studioPrice,
     studioYearlyPrice,
-    currentPlanPrice:
+    currentPlanMonthlyPrice:
       input.plan === "pro"
         ? proPrice
         : input.plan === "studio"
           ? studioPrice
+          : 0,
+    currentPlanYearlyPrice:
+      input.plan === "pro"
+        ? proYearlyPrice
+        : input.plan === "studio"
+          ? studioYearlyPrice
           : 0,
     proMemberCap: input.limits?.pro.memberCap ?? 15,
     currentPlanLimit: input.limits?.[input.plan] ?? null,

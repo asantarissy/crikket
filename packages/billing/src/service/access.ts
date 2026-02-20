@@ -18,7 +18,9 @@ export async function assertUserBelongsToOrganization(input: {
   })
 
   if (!organizationMember) {
-    throw new Error("You do not have access to this organization.")
+    throw new ORPCError("FORBIDDEN", {
+      message: "You do not have access to this organization.",
+    })
   }
 }
 

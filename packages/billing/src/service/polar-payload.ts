@@ -44,6 +44,12 @@ export function extractReferenceId(
   return (
     getNestedString(payload, ["data", "referenceId"]) ??
     getNestedString(payload, ["data", "metadata", "referenceId"]) ??
+    getNestedString(payload, [
+      "data",
+      "subscription",
+      "metadata",
+      "referenceId",
+    ]) ??
     findFirstStringByKeys(payload.data, ["referenceId", "reference_id"])
   )
 }
@@ -77,9 +83,18 @@ export function extractProductId(
 export function extractSubscriptionStatus(
   payload: PolarWebhookPayload
 ): BillingSubscriptionStatus | undefined {
+  const payloadData = asRecord(payload.data)
+  const subscriptionData = asRecord(payloadData?.subscription)
   const rawStatus =
+    (typeof payloadData?.status === "string"
+      ? payloadData.status
+      : undefined) ??
+    (typeof subscriptionData?.status === "string"
+      ? subscriptionData.status
+      : undefined) ??
     getNestedString(payload, ["data", "status"]) ??
-    getNestedString(payload, ["data", "subscription", "status"])
+    getNestedString(payload, ["data", "subscription", "status"]) ??
+    getNestedString(payload, ["data", "subscription_status"])
 
   return rawStatus ? normalizeBillingSubscriptionStatus(rawStatus) : undefined
 }
@@ -89,7 +104,8 @@ export function extractCustomerId(
 ): string | undefined {
   return (
     getNestedString(payload, ["data", "customerId"]) ??
-    getNestedString(payload, ["data", "customer", "id"])
+    getNestedString(payload, ["data", "customer", "id"]) ??
+    getNestedString(payload, ["data", "customer_id"])
   )
 }
 
@@ -102,6 +118,7 @@ export function extractSubscriptionId(
   return (
     getNestedString(payload, ["data", "subscriptionId"]) ??
     getNestedString(payload, ["data", "subscription", "id"]) ??
+    getNestedString(payload, ["data", "subscription_id"]) ??
     (canFallbackToResourceId
       ? getNestedString(payload, ["data", "id"])
       : undefined)
@@ -123,9 +140,25 @@ export function extractCheckoutId(
 export function extractCurrentPeriodStart(
   payload: PolarWebhookPayload
 ): Date | undefined {
+  const payloadData = asRecord(payload.data)
+  const subscriptionData = asRecord(payloadData?.subscription)
   const value =
+    payloadData?.currentPeriodStart ??
+    payloadData?.currentPeriodStartAt ??
+    subscriptionData?.currentPeriodStart ??
+    subscriptionData?.currentPeriodStartAt ??
+    payloadData?.current_period_start ??
+    payloadData?.current_period_start_at ??
     getNestedString(payload, ["data", "currentPeriodStart"]) ??
-    getNestedString(payload, ["data", "currentPeriodStartAt"])
+    getNestedString(payload, ["data", "currentPeriodStartAt"]) ??
+    getNestedString(payload, ["data", "subscription", "currentPeriodStart"]) ??
+    getNestedString(payload, [
+      "data",
+      "subscription",
+      "currentPeriodStartAt",
+    ]) ??
+    getNestedString(payload, ["data", "current_period_start"]) ??
+    getNestedString(payload, ["data", "current_period_start_at"])
 
   return toDateOrUndefined(value)
 }
@@ -133,9 +166,22 @@ export function extractCurrentPeriodStart(
 export function extractCurrentPeriodEnd(
   payload: PolarWebhookPayload
 ): Date | undefined {
+  const payloadData = asRecord(payload.data)
+  const subscriptionData = asRecord(payloadData?.subscription)
   const value =
+    payloadData?.currentPeriodEnd ??
+    payloadData?.currentPeriodEndAt ??
+    subscriptionData?.currentPeriodEnd ??
+    subscriptionData?.currentPeriodEndAt ??
+    payloadData?.current_period_end ??
+    payloadData?.current_period_end_at ??
+    payloadData?.endedAt ??
     getNestedString(payload, ["data", "currentPeriodEnd"]) ??
     getNestedString(payload, ["data", "currentPeriodEndAt"]) ??
+    getNestedString(payload, ["data", "subscription", "currentPeriodEnd"]) ??
+    getNestedString(payload, ["data", "subscription", "currentPeriodEndAt"]) ??
+    getNestedString(payload, ["data", "current_period_end"]) ??
+    getNestedString(payload, ["data", "current_period_end_at"]) ??
     getNestedString(payload, ["data", "endedAt"])
 
   return toDateOrUndefined(value)
@@ -144,9 +190,16 @@ export function extractCurrentPeriodEnd(
 export function extractCancelAtPeriodEnd(
   payload: PolarWebhookPayload
 ): boolean | undefined {
+  const payloadData = asRecord(payload.data)
+  const subscriptionData = asRecord(payloadData?.subscription)
   const value =
-    asRecord(payload.data)?.cancelAtPeriodEnd ??
-    getNestedString(payload, ["data", "cancelAtPeriodEnd"])
+    payloadData?.cancelAtPeriodEnd ??
+    payloadData?.cancel_at_period_end ??
+    subscriptionData?.cancelAtPeriodEnd ??
+    subscriptionData?.cancel_at_period_end ??
+    getNestedString(payload, ["data", "cancelAtPeriodEnd"]) ??
+    getNestedString(payload, ["data", "subscription", "cancelAtPeriodEnd"]) ??
+    getNestedString(payload, ["data", "cancel_at_period_end"])
   if (typeof value === "boolean") {
     return value
   }

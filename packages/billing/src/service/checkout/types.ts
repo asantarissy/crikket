@@ -2,6 +2,7 @@ import type { polarClient } from "../../lib/payments"
 import {
   ACTIVE_PAID_SUBSCRIPTION_STATUSES,
   BILLING_SUBSCRIPTION_STATUS,
+  type BillingSubscriptionStatus,
   normalizeBillingSubscriptionStatus,
 } from "../../model"
 import { extractReferenceIdFromMetadata } from "../polar-payload"
@@ -55,7 +56,7 @@ export function isActivePaidSubscriptionStatus(status: unknown): boolean {
   )
 }
 
-const UPDATABLE_SUBSCRIPTION_STATUSES = new Set([
+const UPDATABLE_SUBSCRIPTION_STATUSES = new Set<BillingSubscriptionStatus>([
   BILLING_SUBSCRIPTION_STATUS.active,
   BILLING_SUBSCRIPTION_STATUS.trialing,
   BILLING_SUBSCRIPTION_STATUS.pastDue,

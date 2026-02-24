@@ -63,7 +63,11 @@
       "date-fns": "^4.1.0",
       "motion": "^12.34.0",
       "react-day-picker": "^9.13.2",
-      "react-resizable-panels": "^4.6.2"
+      "react-resizable-panels": "^4.6.2",
+      "rough-notation": "^0.5.1",
+      "fumadocs-core": "^16.5.0",
+      "fumadocs-mdx": "^14.2.6",
+      "fumadocs-ui": "^16.5.0"
     }
   },
   "type": "module",
@@ -81,7 +85,8 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "husky",
-    "clean": "find . \\( -name node_modules -o -name .next \\) -type d -prune -exec rm -rf '{}' +"
+    "clean": "find . \\( -name node_modules -o -name .next \\) -type d -prune -exec rm -rf '{}' +",
+    "kill:ports": "sh -c 'for p in 3000 3001 4000; do pids=$(lsof -ti tcp:$p); if [ -n \"$pids\" ]; then kill -9 $pids; fi; done'"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.13",

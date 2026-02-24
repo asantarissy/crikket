@@ -1,16 +1,21 @@
-import Link from "next/link"
+import { AnimatedGridPattern } from "@crikket/ui/components/magicui/animated-grid-pattern"
+
+import { Hero } from "./_components/hero"
 
 export default function HomePage() {
   return (
-    <div className="flex flex-1 flex-col justify-center text-center">
-      <h1 className="mb-4 font-bold text-2xl">Hello World</h1>
-      <p>
-        You can open{" "}
-        <Link className="font-medium underline" href="/docs">
-          /docs
-        </Link>{" "}
-        and see the documentation.
-      </p>
+    <div className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-background pt-24 pb-12 sm:pt-32">
+      <AnimatedGridPattern
+        className="mask-[radial-gradient(1000px_circle_at_center,white,transparent)] inset-x-0 inset-y-[-30%] h-[200%] skew-y-12"
+        duration={3}
+        maxOpacity={0.15}
+        numSquares={30}
+        repeatDelay={1}
+      />
+
+      <main className="z-10 flex w-full max-w-[1400px] flex-1 flex-col items-center space-y-16 px-0 text-center sm:px-4 md:px-8 xl:px-12">
+        <Hero />
+      </main>
     </div>
   )
 }

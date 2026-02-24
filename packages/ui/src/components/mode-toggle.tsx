@@ -1,36 +1,82 @@
 "use client"
 
-import { Button } from "@crikket/ui/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@crikket/ui/components/ui/dropdown-menu"
+import { cn } from "@crikket/ui/lib/utils"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
+import { Button } from "./ui/button"
 
-export function ModeToggle() {
-  const { setTheme } = useTheme()
+interface ModeToggleProps extends React.ComponentPropsWithoutRef<"button"> {
+  duration?: number
+}
+
+export const ModeToggle = ({
+  className,
+  duration = 400,
+  ...props
+}: ModeToggleProps) => {
+  const [isDark, setIsDark] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const { resolvedTheme, setTheme } = useTheme()
+
+  useEffect(() => {
+    setIsDark(resolvedTheme === "dark")
+  }, [resolvedTheme])
+
+  const toggleTheme = useCallback(async () => {
+    if (!buttonRef.current) return
+    const newTheme = isDark ? "light" : "dark"
+
+    if (document.startViewTransition) {
+      await document.startViewTransition(() => {
+        flushSync(() => {
+          setTheme(newTheme)
+          setIsDark(newTheme === "dark")
+        })
+      }).ready
+    } else {
+      flushSync(() => {
+        setTheme(newTheme)
+        setIsDark(newTheme === "dark")
+      })
+    }
+
+    const { top, left, width, height } =
+      buttonRef.current.getBoundingClientRect()
+    const x = left + width / 2
+    const y = top + height / 2
+    const maxRadius = Math.hypot(
+      Math.max(left, window.innerWidth - left),
+      Math.max(top, window.innerHeight - top)
+    )
+
+    document.documentElement.animate(
+      {
+        clipPath: [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${maxRadius}px at ${x}px ${y}px)`,
+        ],
+      },
+      {
+        duration,
+        easing: "ease-in-out",
+        pseudoElement: "::view-transition-new(root)",
+      }
+    )
+  }, [duration, isDark, setTheme])
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button size="icon" variant="outline" />}>
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        <span className="sr-only">Toggle theme</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      className={cn(className)}
+      onClick={toggleTheme}
+      ref={buttonRef}
+      size="icon"
+      variant="ghost"
+      {...props}
+    >
+      {isDark ? <Sun /> : <Moon />}
+      <span className="sr-only">Toggle theme</span>
+    </Button>
   )
 }

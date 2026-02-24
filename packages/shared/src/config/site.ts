@@ -5,5 +5,31 @@ export const siteConfig = {
   title: "Crikket",
   description:
     "Modern instant bug reporting platform. An open-source alternative to jam.dev and marker.io.",
-  url: env.NEXT_PUBLIC_APP_URL,
+  url: {
+    public: env.NEXT_PUBLIC_SITE_URL,
+    app: env.NEXT_PUBLIC_APP_URL,
+  },
+  keywords: [
+    "bug reporting",
+    "bug tracker",
+    "issue reporting",
+    "developer tools",
+    "open source",
+  ],
+  seo: {
+    titleTemplate: "%s | Crikket",
+    canonicalPath: "/",
+    locale: "en_US",
+    openGraphType: "website" as const,
+    twitterCard: "summary_large_image" as const,
+    defaultOgImage: "/og.png",
+  },
+  author: {
+    name: "redpangilinan",
+    twitter: "@redpngilinan",
+  },
+  links: {
+    github: "https://github.com/redpangilinan/crikket",
+    twitter: "https://x.com/redpngilinan",
+  },
 }

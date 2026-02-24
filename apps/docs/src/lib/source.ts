@@ -1,4 +1,5 @@
 import { docs } from "fumadocs-mdx:collections/server"
+import { siteConfig } from "@crikket/shared/config/site"
 import { type InferPageType, loader } from "fumadocs-core/source"
 import { lucideIconsPlugin } from "fumadocs-core/source/lucide-icons"
 
@@ -11,10 +12,12 @@ export const source = loader({
 
 export function getPageImage(page: InferPageType<typeof source>) {
   const segments = [...page.slugs, "image.png"]
+  const path = `/og/docs/${segments.join("/")}`
 
   return {
     segments,
-    url: `/og/docs/${segments.join("/")}`,
+    path,
+    url: new URL(path, siteConfig.url.public).toString(),
   }
 }
 

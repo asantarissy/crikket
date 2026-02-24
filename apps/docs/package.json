@@ -10,10 +10,12 @@
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
+    "@crikket/env": "workspace:*",
     "@crikket/shared": "workspace:*",
-    "fumadocs-core": "16.5.0",
-    "fumadocs-mdx": "14.2.6",
-    "fumadocs-ui": "16.5.0",
+    "@crikket/ui": "workspace:*",
+    "fumadocs-core": "catalog:",
+    "fumadocs-mdx": "catalog:",
+    "fumadocs-ui": "catalog:",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "react": "catalog:",

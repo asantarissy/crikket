@@ -21,6 +21,7 @@
       "!**/.opencode",
       "!**/.github",
       "!packages/ui/src/components/ui",
+      "!packages/ui/src/components/magicui",
       "!packages/ui/src/components/data-table",
       "!packages/db/src/migrations"
     ]

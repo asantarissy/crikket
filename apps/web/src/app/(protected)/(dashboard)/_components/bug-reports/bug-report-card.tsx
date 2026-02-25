@@ -1,10 +1,6 @@
 "use client"
 
-import type {
-  BugReportStatus,
-  BugReportVisibility,
-} from "@crikket/shared/constants/bug-report"
-import type { Priority } from "@crikket/shared/constants/priorities"
+import type { BugReportVisibility } from "@crikket/shared/constants/bug-report"
 import { reportNonFatalError } from "@crikket/shared/lib/errors"
 import { Button } from "@crikket/ui/components/ui/button"
 import { Card, CardContent } from "@crikket/ui/components/ui/card"
@@ -23,6 +19,7 @@ import {
 import {
   Clock,
   Copy,
+  Edit3,
   ExternalLink,
   MoreVertical,
   Play,
@@ -32,14 +29,13 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import type { ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 import { toast } from "sonner"
+import { EditBugReportSheet } from "@/components/bug-reports/edit-bug-report-sheet"
 
 import {
   formatPriorityLabel,
   formatStatusLabel,
-  PRIORITY_FILTER_OPTIONS,
-  STATUS_OPTIONS,
   VISIBILITY_OPTIONS,
 } from "./filters"
 import type { BugReportListItem } from "./types"
@@ -50,11 +46,8 @@ interface BugReportCardProps {
   isMutating: boolean
   onToggleSelection: (checked: boolean) => void
   onRequestDelete: () => void
-  onUpdateReport: (input: {
-    status?: BugReportStatus
-    priority?: Priority
-    visibility?: BugReportVisibility
-  }) => void
+  onReportUpdated: () => Promise<void>
+  onUpdateReport: (input: { visibility?: BugReportVisibility }) => void
 }
 
 export function BugReportCard({
@@ -63,9 +56,11 @@ export function BugReportCard({
   isMutating,
   onToggleSelection,
   onRequestDelete,
+  onReportUpdated,
   onUpdateReport,
 }: BugReportCardProps) {
   const isPrivate = report.visibility === "private"
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
 
   const handleCopyLink = async () => {
     const shareUrl = `${window.location.origin}/s/${report.id}`
@@ -133,49 +128,7 @@ export function BugReportCard({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Status</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    onValueChange={(value) => {
-                      if (value !== report.status) {
-                        onUpdateReport({ status: value as BugReportStatus })
-                      }
-                    }}
-                    value={report.status}
-                  >
-                    {STATUS_OPTIONS.map((statusOption) => (
-                      <DropdownMenuRadioItem
-                        key={statusOption.value}
-                        value={statusOption.value}
-                      >
-                        {statusOption.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Priority</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    onValueChange={(value) => {
-                      if (value !== report.priority) {
-                        onUpdateReport({ priority: value as Priority })
-                      }
-                    }}
-                    value={report.priority}
-                  >
-                    {PRIORITY_FILTER_OPTIONS.map((priorityOption) => (
-                      <DropdownMenuRadioItem
-                        key={priorityOption.value}
-                        value={priorityOption.value}
-                      >
-                        {priorityOption.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Visibility</DropdownMenuLabel>
+                  <DropdownMenuLabel>Privacy</DropdownMenuLabel>
                   <DropdownMenuRadioGroup
                     onValueChange={(value) => {
                       if (value !== report.visibility) {
@@ -196,6 +149,11 @@ export function BugReportCard({
                     ))}
                   </DropdownMenuRadioGroup>
                 </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsEditSheetOpen(true)}>
+                  <Edit3 className="size-4" />
+                  Edit report
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={onRequestDelete}
@@ -256,6 +214,19 @@ export function BugReportCard({
           </div>
         </div>
       </CardContent>
+      <EditBugReportSheet
+        onOpenChange={setIsEditSheetOpen}
+        onUpdated={onReportUpdated}
+        open={isEditSheetOpen}
+        report={{
+          id: report.id,
+          title: report.title,
+          tags: report.tags,
+          status: report.status,
+          priority: report.priority,
+          visibility: report.visibility,
+        }}
+      />
     </Card>
   )
 }

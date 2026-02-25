@@ -1,16 +1,37 @@
+import {
+  BUG_REPORT_STATUS_OPTIONS,
+  type BugReportStatus,
+} from "@crikket/shared/constants/bug-report"
 import { Button } from "@crikket/ui/components/ui/button"
 import { Separator } from "@crikket/ui/components/ui/separator"
+import { Home } from "lucide-react"
 import Link from "next/link"
+import type { ReactNode } from "react"
 import type { SharedBugReport } from "./types"
 
 interface BugReportHeaderProps {
   data: SharedBugReport
+  editAction?: ReactNode
+}
+
+function formatStatusLabel(status: BugReportStatus): string {
+  switch (status) {
+    case BUG_REPORT_STATUS_OPTIONS.inProgress:
+      return "In Progress"
+    case BUG_REPORT_STATUS_OPTIONS.resolved:
+      return "Resolved"
+    case BUG_REPORT_STATUS_OPTIONS.closed:
+      return "Closed"
+    default:
+      return "Open"
+  }
 }
 
 export function BugReportHeader({
   data,
   sidebarTrigger,
-}: BugReportHeaderProps & { sidebarTrigger?: React.ReactNode }) {
+  editAction,
+}: BugReportHeaderProps & { sidebarTrigger?: ReactNode }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-4">
@@ -30,7 +51,7 @@ export function BugReportHeader({
             {data.title ?? "Untitled Bug Report"}
           </h1>
           <span className="hidden items-center rounded-full border bg-secondary px-2 py-0.5 font-semibold text-secondary-foreground text-xs sm:inline-flex">
-            {data.status}
+            {formatStatusLabel(data.status)}
           </span>
         </div>
       </div>
@@ -40,9 +61,15 @@ export function BugReportHeader({
           {new Date(data.createdAt).toLocaleString()}
         </span>
         <Separator className="hidden sm:block" orientation="vertical" />
+        {editAction}
         <Button
           nativeButton={false}
-          render={<Link href="/">Dashboard</Link>}
+          render={
+            <Link href="/">
+              <Home />
+              <span className="sr-only">Dashboard</span>
+            </Link>
+          }
           size="sm"
           variant="ghost"
         />

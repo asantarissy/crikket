@@ -40,6 +40,11 @@ export const getBugReportById = o
       session: context.session,
       visibility: report.visibility,
     })
+    const activeOrgId = context.session?.session.activeOrganizationId
+    const canEdit =
+      Boolean(context.session?.user) &&
+      Boolean(activeOrgId) &&
+      activeOrgId === report.organizationId
 
     const status = isStatus(report.status) ? report.status : statusValues[0]
     const priority = priorityValues.includes(report.priority as Priority)
@@ -61,6 +66,7 @@ export const getBugReportById = o
       attachmentUrl,
       attachmentType: report.attachmentType,
       visibility,
+      canEdit,
       deviceInfo: report.deviceInfo,
       metadata: report.metadata,
       createdAt: report.createdAt.toISOString(),

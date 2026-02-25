@@ -8,10 +8,11 @@ import {
   ResizablePanelGroup,
 } from "@crikket/ui/components/ui/resizable"
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
-import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react"
+import { AlertCircle, Edit, Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs"
 import { useCallback, useMemo, useRef, useState } from "react"
+import { EditBugReportSheet } from "@/components/bug-reports/edit-bug-report-sheet"
 import { orpc } from "@/utils/orpc"
 
 import { BugReportCanvas } from "./bug-report-canvas"
@@ -67,7 +68,7 @@ function getMetadataDurationMs(metadata: unknown): number | null {
 }
 
 export function BugReportView({ id }: BugReportViewProps) {
-  const { data, isLoading, error } = useQuery(
+  const { data, isLoading, error, refetch } = useQuery(
     orpc.bugReport.getById.queryOptions({
       input: { id },
       enabled: Boolean(id),
@@ -130,6 +131,7 @@ export function BugReportView({ id }: BugReportViewProps) {
   const mobileVideoRef = useRef<HTMLVideoElement | null>(null)
   const [playbackOffsetMs, setPlaybackOffsetMs] = useState(0)
   const [isMobileVideoHidden, setIsMobileVideoHidden] = useState(false)
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
   const [selectedEntryIds, setSelectedEntryIds] =
     useState<SelectedEntryIds>(EMPTY_SELECTION)
 
@@ -304,7 +306,38 @@ export function BugReportView({ id }: BugReportViewProps) {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <BugReportHeader data={data} />
+      <BugReportHeader
+        data={data}
+        editAction={
+          data.canEdit ? (
+            <Button
+              onClick={() => setIsEditSheetOpen(true)}
+              size="sm"
+              variant="ghost"
+            >
+              <Edit />
+              <span className="sr-only">Edit</span>
+            </Button>
+          ) : null
+        }
+      />
+      {data.canEdit ? (
+        <EditBugReportSheet
+          onOpenChange={setIsEditSheetOpen}
+          onUpdated={async () => {
+            await refetch()
+          }}
+          open={isEditSheetOpen}
+          report={{
+            id: data.id,
+            title: data.title,
+            tags: data.tags,
+            status: data.status,
+            priority: data.priority,
+            visibility: data.visibility,
+          }}
+        />
+      ) : null}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop View */}

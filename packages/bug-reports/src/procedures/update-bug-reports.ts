@@ -10,6 +10,7 @@ import { z } from "zod"
 import {
   isStatus,
   isVisibility,
+  optionalText,
   statusValues,
   visibilityValues,
 } from "../lib/utils"
@@ -26,6 +27,7 @@ const tagsInputSchema = z.array(z.string().trim().min(1).max(40)).max(20)
 const bugReportUpdateInputSchema = z
   .object({
     id: z.string().min(1),
+    title: optionalText(200),
     status: z.enum(statusValues).optional(),
     priority: z.enum(priorityValues).optional(),
     visibility: z.enum(visibilityValues).optional(),
@@ -33,6 +35,7 @@ const bugReportUpdateInputSchema = z
   })
   .superRefine((value, ctx) => {
     if (
+      value.title === undefined &&
       value.status === undefined &&
       value.priority === undefined &&
       value.visibility === undefined &&
@@ -68,17 +71,23 @@ const bugReportBulkUpdateInputSchema = z
   })
 
 function buildUpdateValues(input: {
+  title?: string
   status?: (typeof statusValues)[number]
   priority?: Priority
   visibility?: (typeof visibilityValues)[number]
   tags?: string[]
 }) {
   const values: {
+    title?: string
     status?: string
     priority?: string
     visibility?: string
     tags?: string[]
   } = {}
+
+  if (input.title !== undefined) {
+    values.title = input.title
+  }
 
   if (input.status !== undefined) {
     values.status = input.status
@@ -116,6 +125,7 @@ export const updateBugReport = protectedProcedure
       )
       .returning({
         id: bugReport.id,
+        title: bugReport.title,
         status: bugReport.status,
         priority: bugReport.priority,
         visibility: bugReport.visibility,
@@ -129,6 +139,7 @@ export const updateBugReport = protectedProcedure
 
     return {
       id: report.id,
+      title: report.title,
       status: isStatus(report.status) ? report.status : statusValues[0],
       priority: priorityValues.includes(report.priority as Priority)
         ? (report.priority as Priority)

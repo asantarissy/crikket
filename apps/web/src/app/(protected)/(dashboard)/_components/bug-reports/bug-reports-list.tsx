@@ -132,6 +132,7 @@ export function BugReportsList() {
               isChecked={actionsState.selectedIds.has(report.id)}
               isMutating={actionsState.isMutating}
               key={report.id}
+              onReportUpdated={refetchAll}
               onRequestDelete={() => actionsState.setDeleteReportId(report.id)}
               onToggleSelection={(checked) =>
                 actionsState.toggleSelection(report.id, checked)

@@ -219,6 +219,14 @@
         "typescript": "catalog:",
       },
     },
+    "packages/capture-core": {
+      "name": "@crikket/capture-core",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@crikket/config": "workspace:*",
+        "typescript": "catalog:",
+      },
+    },
     "packages/config": {
       "name": "@crikket/config",
       "version": "0.0.0",
@@ -315,6 +323,17 @@
       "peerDependencies": {
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
+      },
+    },
+    "sdks/capture": {
+      "name": "@crikket/capture",
+      "version": "0.1.0",
+      "dependencies": {
+        "@crikket/capture-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@crikket/config": "workspace:*",
+        "typescript": "catalog:",
       },
     },
   },
@@ -528,6 +547,10 @@
     "@crikket/billing": ["@crikket/billing@workspace:packages/billing"],
 
     "@crikket/bug-reports": ["@crikket/bug-reports@workspace:packages/bug-reports"],
+
+    "@crikket/capture": ["@crikket/capture@workspace:sdks/capture"],
+
+    "@crikket/capture-core": ["@crikket/capture-core@workspace:packages/capture-core"],
 
     "@crikket/config": ["@crikket/config@workspace:packages/config"],
 

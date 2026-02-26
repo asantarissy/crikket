@@ -49,5 +49,7 @@ coverage
 tmp
 temp
 storage
+local/
+
 .agents/
 AGENTS.md

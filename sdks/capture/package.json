@@ -1,0 +1,26 @@
+{
+  "name": "@crikket/capture",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check-types": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@crikket/capture-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@crikket/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

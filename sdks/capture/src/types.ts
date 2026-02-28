@@ -3,6 +3,7 @@ import type {
   DebuggerEvent,
 } from "@crikket/capture-core/debugger/types"
 import type { Priority } from "@crikket/shared/constants/priorities"
+import type * as eagerCapture from "./eager"
 
 export type CaptureType = "video" | "screenshot"
 export type CapturePriority = Priority
@@ -122,3 +123,5 @@ export interface CaptureRuntimeController {
   isInitialized: () => boolean
   getConfig: () => CaptureRuntimeConfig | null
 }
+
+export type CaptureGlobalApi = typeof eagerCapture

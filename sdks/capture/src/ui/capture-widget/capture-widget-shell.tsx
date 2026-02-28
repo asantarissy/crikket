@@ -1,4 +1,5 @@
 import type { CaptureUiHandlers, CaptureUiState } from "../types"
+import { CaptureLauncherButton } from "./components/capture-launcher-button"
 import { Button } from "./components/primitives/button"
 import {
   Card,
@@ -24,16 +25,11 @@ export function CaptureWidgetShell(props: {
 
   return (
     <div className="crikket-capture-root">
-      <Button
-        aria-label="Report an issue"
-        className="fixed right-6 bottom-6 z-[var(--capture-z-index)] rounded-full px-4 shadow-2xl"
+      <CaptureLauncherButton
         disabled={isBusy}
         onClick={props.handlers.onLauncherClick}
-        style={{ ["--capture-z-index" as string]: String(props.zIndex) }}
-        type="button"
-      >
-        Report Issue
-      </Button>
+        zIndex={props.zIndex}
+      />
 
       {props.state.overlayOpen ? (
         <div

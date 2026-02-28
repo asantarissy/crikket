@@ -1,5 +1,5 @@
 import * as capture from "./eager"
-import type { CaptureGlobalApi } from "./global-api"
+import type { CaptureGlobalApi } from "./types"
 
 declare global {
   interface Window {

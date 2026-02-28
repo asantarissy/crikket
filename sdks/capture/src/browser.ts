@@ -1,4 +1,3 @@
-import type { CaptureGlobalApi } from "./global-api"
 import {
   close,
   defaultSubmitTransport,
@@ -16,6 +15,7 @@ import {
   takeScreenshot,
   unmount,
 } from "./index"
+import type { CaptureGlobalApi } from "./types"
 
 const capture = {
   close,

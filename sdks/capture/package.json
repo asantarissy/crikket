@@ -24,7 +24,8 @@
   ],
   "scripts": {
     "build": "bun run ./scripts/build.ts",
-    "check-types": "tsc --noEmit -p tsconfig.json"
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test test"
   },
   "dependencies": {
     "@crikket/shared": "workspace:*",

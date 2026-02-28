@@ -1,0 +1,116 @@
+---
+title: Integration
+description: Integrate the Capture SDK with init(), Next.js, or React.
+---
+
+This page covers the recommended ways to initialize the Capture SDK with a public key.
+
+## Plain Browser Integration
+
+Use `init()` if you want the smallest integration surface in any browser app.
+
+```ts
+import { init } from "@crikket/capture"
+
+init({
+  key: "crk_your_public_key",
+  host: "https://api.crikket.io",
+})
+```
+
+Common options:
+
+- `key`: required public key from `Settings` -> `Public Keys`
+- `host`: Crikket API origin
+- `autoMount`: mounts automatically when omitted
+- `mountTarget`: custom element to mount into
+- `submitPath`: custom public ingest path
+- `zIndex`: custom stacking order for the widget
+
+If you need programmatic control, the package also exports runtime helpers:
+
+```ts
+import { close, init, open } from "@crikket/capture"
+
+init({
+  key: "crk_your_public_key",
+  host: "https://api.crikket.io",
+})
+
+open()
+close()
+```
+
+## Next.js 15.3+ with `instrumentation-client.ts`
+
+For Next.js 15.3 and newer, initialize the SDK once in `instrumentation-client.ts`.
+
+```ts
+import { init } from "@crikket/capture"
+
+const capturePublicKey = process.env.NEXT_PUBLIC_CRIKKET_CAPTURE_KEY
+
+if (capturePublicKey) {
+  init({
+    key: capturePublicKey,
+    host: process.env.NEXT_PUBLIC_CRIKKET_HOST ?? "https://api.crikket.io",
+  })
+}
+```
+
+Recommended environment variables:
+
+```bash
+NEXT_PUBLIC_CRIKKET_CAPTURE_KEY=crk_your_public_key
+NEXT_PUBLIC_CRIKKET_HOST=https://api.crikket.io
+```
+
+## React Integration
+
+Use `@crikket/capture/react` when you want a React-native mount point near your app root.
+
+```tsx
+"use client"
+
+import { CapturePlugin } from "@crikket/capture/react"
+
+export function CaptureProvider(): React.JSX.Element {
+  return (
+    <CapturePlugin
+      host="https://api.crikket.io"
+      publicKey="crk_your_public_key"
+    />
+  )
+}
+```
+
+With environment variables:
+
+```tsx
+"use client"
+
+import { CapturePlugin } from "@crikket/capture/react"
+
+export function CaptureProvider(): React.JSX.Element | null {
+  const publicKey = process.env.NEXT_PUBLIC_CRIKKET_CAPTURE_KEY
+
+  if (!publicKey) {
+    return null
+  }
+
+  return (
+    <CapturePlugin
+      host={process.env.NEXT_PUBLIC_CRIKKET_HOST ?? "https://api.crikket.io"}
+      publicKey={publicKey}
+    />
+  )
+}
+```
+
+`CapturePlugin` accepts the same options as `init()`, except it uses `publicKey` instead of `key`.
+
+## Public Key Guidance
+
+- Public keys are safe to ship in client-side code.
+- Restrict each key to the exact origins you own.
+- Rotate or revoke keys from `Settings` -> `Public Keys` if an embed needs to be replaced or disabled.

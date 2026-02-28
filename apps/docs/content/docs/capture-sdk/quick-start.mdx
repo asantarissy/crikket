@@ -1,0 +1,96 @@
+---
+title: Quick Start
+description: Create a public key and embed the Capture SDK in your site.
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps"
+
+This guide shows how to create a public key and use it to install the Capture SDK on your website.
+
+## Prerequisites
+
+- A Crikket organization
+- Admin or owner access to manage public keys
+- A website or app origin you control
+
+<Steps>
+  <Step>
+
+  ### Create a Public Key
+
+  In Crikket, go to `Settings` -> `Public Keys`.
+
+  Create one public key per owned website or app surface.
+
+  </Step>
+
+  <Step>
+
+  ### Add Allowed Origins
+
+  Add the exact HTTP(S) origins where the widget is allowed to run, for example:
+
+  - `https://example.com`
+  - `https://www.example.com`
+  - `http://localhost:3000`
+
+  Public keys are safe to embed in client-side code.
+
+  </Step>
+
+  <Step>
+
+  ### Install the SDK
+
+  ```bash
+  npm install @crikket/capture
+  ```
+
+  Or:
+
+  ```bash
+  bun add @crikket/capture
+  ```
+
+  </Step>
+
+  <Step>
+
+  ### Initialize the Widget
+
+  Run `init()` in a browser entrypoint:
+
+  ```ts
+  import { init } from "@crikket/capture"
+
+  init({
+    key: "crk_your_public_key",
+    host: "https://api.crikket.io",
+  })
+  ```
+
+  This mounts the floating launcher on your page.
+
+  </Step>
+
+  <Step>
+
+  ### Verify the Integration
+
+  Confirm that:
+
+  - the launcher appears on your site
+  - you can open the widget
+  - screenshot or screen recording capture starts
+  - the review form can submit successfully
+
+  </Step>
+
+</Steps>
+
+## Notes
+
+- Use one public key per website or app surface.
+- Include local development origins if you want to test locally.
+- Screen capture permission prompts are expected browser behavior.
+- If you self-host Crikket, replace `https://api.crikket.io` with your own API origin.

@@ -128,12 +128,14 @@ export const auth = betterAuth({
           const email = user.email?.toLowerCase() ?? ""
           const domain = email.split("@")[1] ?? ""
 
+          const allowAll = allowedSignupDomains.includes("*")
           if (
+            !allowAll &&
             allowedSignupDomains.length > 0 &&
             !allowedSignupDomains.includes(domain)
           ) {
             throw new APIError("UNPROCESSABLE_ENTITY", {
-              message: `Sign up is only available for ${allowedSignupDomains.join(", ")} domains.`,
+              message: `Sign up is only available for ${allowedSignupDomains.filter((d) => d !== "*").join(", ")} domains.`,
             })
           }
         },
